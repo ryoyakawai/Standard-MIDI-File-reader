@@ -9,44 +9,59 @@ function appendText( e, text ) {
 }
 
 function dumpFileInfo( e ) {	// Performs a simple dump of the MIDI file
-	var i, j;
+	 var i, j;
+  
+	 if (!e)
+		 return;
 
-	if (!e)
-		return;
-	
-	e.innerHTML = "File type: " + midiFile.format + "<br>" + 
-		"Number of tracks: " + midiFile.numTracks + "<br>" + 
-		"Ticks per beat: " + midiFile.ticksPerBeat + "<br>";
+	 e.innerHTML = "File type: " + midiFile.format + "<br>" + 
+		  "Number of tracks: " + midiFile.numTracks + "<br>" + 
+		  "Ticks per beat: " + midiFile.ticksPerBeat + "<br>";
 		
-	for (i = 0; i<midiFile.numTracks; i++) {
-		var track = midiFile.tracks[i];
-		appendText( e, "Track #" + i + ": ")
-		if (track.trackName)
-			appendText( e, "\"" + track.trackName + "\" ");
-		appendText( e, track.events.length + " events" );
-		e.appendChild( document.createElement( "br" ) );
+	 for (i = 0; i<midiFile.numTracks; i++) {
+		  var track = midiFile.tracks[i];
+		  appendText( e, "Track #" + i + ": ");
+		  if (track.trackName)
+			   appendText( e, "\"" + track.trackName + "\" ");
+		  appendText( e, track.events.length + " events" );
+		  e.appendChild( document.createElement( "br" ) );
+    
+		  var str="";
+		 
+		  for (j=0;j<track.events.length;j++) {
+			   var ev = track.events[j];
 
-		var str="";
-		
-		for (j=0;j<track.events.length;j++) {
-			var ev = track.events[j];
-			
-			if (ev.type == "MIDI") {
-				var n = (ev.midiEventType << 4) + ev.midiChannel;
-				str += "[" + n.toString(16) + " " + ev.parameter1.toString(16);
-				if (ev.parameter2)
-					str += ev.parameter2.toString(16);
-				str += "] ";
-			} else if (ev.type == "meta") {
-				str += "[meta " + ev.metaType.toString(16) + " " + ev.metaData.length + "bytes]";
-			} else {	// must be sysex
-				str += "[sysex: " + ev.metaData.length + "bytes]";
-			}
-			
-		}
-		appendText(e, str);
-		e.appendChild( document.createElement( "br" ) );
-		e.appendChild( document.createElement( "br" ) );
+			   if (ev.type == "MIDI") {
+				    var n = (ev.midiEventType << 4) + ev.midiChannel;
+        var midiMsgName = returnMidiMsgName(n.toString(16).toUpperCase(), ev.parameter1.toString(16).toUpperCase());
+
+				    str += midiMsgName + " [" + n.toString(16).toUpperCase() + " " + ev.parameter1.toString(16).toUpperCase() + " ";
+				    if (ev.parameter2)
+					     str += ev.parameter2.toString(16).toUpperCase();
+				    str += "] <br>";
+			   } else if (ev.type == "meta") {
+				    str += "Meta [meta " + ev.metaType.toString(16) + " " + ev.metaData.length + "bytes] ";
+/*
+        for( i=0; i<ev.metaData.length; i++ ) {
+          str += ev.metaData[i].toString(16).toUpperCase() + " ";
+        }
+*/
+        str += "<br>";
+			   } else {	// must be sysex
+        var out = null;
+				    str += "SysEx [sysex: " + ev.metaData.length + "bytes] ";        
+        for( i=0; i<ev.metaData.length; i++ ) {
+          str += ev.metaData[i].toString(16).toUpperCase() + " ";
+        }
+        str += "<br>";
+        
+			   }
+			   
+		  }
+		  //appendText(e, str);
+	   e.innerHTML = str; 
+		  e.appendChild( document.createElement( "br" ) );
+		  e.appendChild( document.createElement( "br" ) );
 	}
 
 }
@@ -179,7 +194,7 @@ function decodeTrackEvent( data, track, trackOffset ) {
 	if (i==0xff)
 	  idx = decodeMetaEvent( data, idx, track, trackEvent );
 	else if ((i==0xf0)||(i==0xf7))
-	  idx = decodeSysexEvent( data, idx, trackEvent );
+	  idx = decodeSysexEvent( data, idx, track, trackEvent );
 	else if (i & 0x80) // non-running-mode MIDI Event
 	  idx = decodeMIDIEvent( data, idx, trackEvent );
 	else if (lastEventIdx > 0)
@@ -222,34 +237,34 @@ function decodeTrack( data, track, trackOffset ) {
 }
 
 function decodeSMF( buffer ) {
-	var data = new DataView(buffer);
-	var idx=0;
-	midiFile = {}; // clear the midi file object if it's already allocated
-	
-//	document.getElementById("updates").innerHTML = "";
-//  alert( "File is " + buffer.byteLength + " bytes long.");
+	 var data = new DataView(buffer);
+	 var idx=0;
+	 midiFile = {}; // clear the midi file object if it's already allocated
 
-//   char           ID[4];  // File header "MThd" 
-	if ( (data.getUint8(idx++) != 0x4d) ||
-	 	 (data.getUint8(idx++) != 0x54) ||
-	 	 (data.getUint8(idx++) != 0x68) ||
-	 	 (data.getUint8(idx++) != 0x64) )
-	  return(error("malformed file header"));
+  //	document.getElementById("updates").innerHTML = "";
+  //  alert( "File is " + buffer.byteLength + " bytes long.");
+
+  //   char           ID[4];  // File header "MThd" 
+	 if ( (data.getUint8(idx++) != 0x4d) ||
+	 	    (data.getUint8(idx++) != 0x54) ||
+	 	    (data.getUint8(idx++) != 0x68) ||
+	 	    (data.getUint8(idx++) != 0x64) )
+	   return(error("malformed file header"));
 		
-//   unsigned long  Length; /* This should be 6 */
-	if (data.getUint32(idx) != 6)
-	  return(error("file header length is not 6."));
-	idx+=4;
+  //   unsigned long  Length; /* This should be 6 */
+	 if (data.getUint32(idx) != 6)
+	   return(error("file header length is not 6."));
+	 idx+=4;
+  
+  //   unsigned short format;
+	 midiFile.format = data.getUint16(idx);
+	 idx+=2;
 
-//   unsigned short format;
-	midiFile.format = data.getUint16(idx);
-	idx+=2;
-	
-	if ((midiFile.format < 0) || (midiFile.format > 2) )
-		return(error("MIDI file format " + midiFile.format + " unrecognized."));
+	 if ((midiFile.format < 0) || (midiFile.format > 2) )
+		  return(error("MIDI file format " + midiFile.format + " unrecognized."));
 	
 		if (midiFile.format == 2 )
-			return(error("MIDI file format type 2 not supported."));
+			 return(error("MIDI file format type 2 not supported."));
 
 //   unsigned short numTracks;
 	midiFile.numTracks = data.getUint16(idx);

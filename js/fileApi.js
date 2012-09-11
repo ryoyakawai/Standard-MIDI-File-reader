@@ -15,7 +15,7 @@ holder.ondrop = function (e) {
   e.preventDefault();
 
   var file = e.dataTransfer.files[0],
-      reader = new FileReader();
+  reader = new FileReader();
   reader.onload = function (event) {
     decodeSMF(event.target.result);
   };
