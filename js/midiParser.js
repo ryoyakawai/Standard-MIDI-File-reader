@@ -34,24 +34,36 @@ function dumpFileInfo( e ) {	// Performs a simple dump of the MIDI file
 			   if (ev.type == "MIDI") {
 				    var n = (ev.midiEventType << 4) + ev.midiChannel;
         var midiMsgName = returnMidiMsgName(n.toString(16).toUpperCase(), ev.parameter1.toString(16).toUpperCase());
+        
+				    //str += j + " " + midiMsgName + " [" + n.toString(16).toUpperCase() + " " + ev.parameter1.toString(16).toUpperCase() + " ";
+				    str += j + " " + midiMsgName + " ["
+                       + n.toString(16).toUpperCase() + " : " + n.toString(2) + " "
+                       + ev.parameter1.toString(16).toUpperCase() + " : " + n.toString(2) + " ";
 
-				    str += midiMsgName + " [" + n.toString(16).toUpperCase() + " " + ev.parameter1.toString(16).toUpperCase() + " ";
-				    if (ev.parameter2)
-					     str += ev.parameter2.toString(16).toUpperCase();
+				    if (ev.parameter2) {
+					     //str += ev.parameter2.toString(16).toUpperCase();
+					     str += ev.parameter2.toString(16).toUpperCase() + " : " + ev.parameter2.toString(2) ;
+        }
 				    str += "] <br>";
 			   } else if (ev.type == "meta") {
-				    str += "Meta [meta " + ev.metaType.toString(16) + " " + ev.metaData.length + "bytes] ";
-/*
-        for( i=0; i<ev.metaData.length; i++ ) {
-          str += ev.metaData[i].toString(16).toUpperCase() + " ";
+				    //str += j + " " + "Meta [meta " + ev.metaType.toString(16) + " " + ev.metaData.length + "bytes] ";
+				    str += j + " " + "Meta [meta " + ev.metaType.toString(16) + " " + ev.metaData.length + "bytes] ";
+        /*
+        if(ev.metaData.length>0) {
+          console.log(ev.metaData.length, ev.metaData);
+          for( i=0; i<ev.metaData.length; i++ ) {
+            str += j + " " + ev.metaData[i].toString(16).toUpperCase() + " ";
+          }
+          
         }
-*/
+        */
         str += "<br>";
 			   } else {	// must be sysex
         var out = null;
-				    str += "SysEx [sysex: " + ev.metaData.length + "bytes] ";        
+				    str += j + " " + "SysEx [sysex: " + ev.metaData.length + "bytes] ";        
         for( i=0; i<ev.metaData.length; i++ ) {
-          str += ev.metaData[i].toString(16).toUpperCase() + " ";
+//          str += ev.metaData[i].toString(16).toUpperCase() + " ";
+          str += ev.metaData[i].toString(16).toUpperCase() + " : " + ev.metaData[i].toString(2) + " ";
         }
         str += "<br>";
         
